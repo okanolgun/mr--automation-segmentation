@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRI Segmentasyon Uygulaması</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8f2ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .folder-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .upload-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .supported-formats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .supported-formats h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .format-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .format-tag {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .folder-tag {
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .upload-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 MRI Segmentasyon Uygulaması</h1>
+            <p>UNet3D ile Beyin Görüntü Segmentasyonu</p>
+        </div>
+
+        <div class="content">
+            <div class="upload-section">
+                <h2>MRI Dosyanızı Yükleyin</h2>
+                <p>Desteklenen formatlardaki MRI dosyalarınızı veya klasörlerinizi yükleyerek otomatik segmentasyon yapabilirsiniz.</p>
+                
+                <div class="supported-formats">
+                    <h3>📁 Desteklenen Dosya Formatları:</h3>
+                    <div class="format-list">
+                        <span class="format-tag">.nii</span>
+                        <span class="format-tag">.nii.gz</span>
+                        <span class="format-tag">.dcm (DICOM)</span>
+                        <span class="format-tag">.zip (DICOM klasörü)</span>
+                        <span class="folder-tag">📁 Klasör (DICOM dosyaları)</span>
+                    </div>
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Dosya veya klasör seçmek için tıklayın veya sürükleyin</div>
+                    <div class="upload-hint">Maksimum dosya boyutu: 500MB | Klasörler için tüm DICOM dosyaları otomatik işlenir</div>
+                    
+                    <div class="upload-buttons">
+                        <button class="btn" onclick="document.getElementById('fileInput').click()">📄 Dosya Seç</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('folderInput').click()">📁 Klasör Seç</button>
+                    </div>
+                    
+                    <input type="file" id="fileInput" class="file-input" accept=".nii,.nii.gz,.dcm,.zip">
+                    <input type="file" id="folderInput" class="folder-input" webkitdirectory directory multiple>
+                </div>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p>Dosya yükleniyor...</p>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Segmentasyon işlemi devam ediyor...</p>
+                    <p>Bu işlem birkaç dakika sürebilir.</p>
+                </div>
+            </div>
+
+            <div class="result-section" id="resultSection">
+                <div class="success-message" id="successMessage"></div>
+                <img id="resultImage" class="result-image" alt="Segmentasyon Sonucu">
+                <button class="btn" id="downloadBtn" onclick="downloadResult()">Tüm Sonuçları Zip Olarak İndir</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const folderInput = document.getElementById('folderInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const loading = document.getElementById('loading');
+        const resultSection = document.getElementById('resultSection');
+        const successMessage = document.getElementById('successMessage');
+        const resultImage = document.getElementById('resultImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let currentResultFile = null;
+        let currentZipFile = null;
+
+        // Drag and drop işlemleri
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const items = e.dataTransfer.items;
+            
+            if (items) {
+                // Klasör kontrolü
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.kind === 'file') {
+                        const entry = item.webkitGetAsEntry();
+                        if (entry && entry.isDirectory) {
+                            // Klasör sürüklendi
+                            handleFolderDrop(entry);
+                            return;
+                        }
+                    }
+                }
+                
+                // Dosya sürüklendi
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        folderInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFolder(e.target.files);
+            }
+        });
+
+        function handleFile(file) {
+            // Dosya formatını kontrol et
+            const allowedExtensions = ['.nii', '.nii.gz', '.dcm', '.zip'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!allowedExtensions.includes(fileExtension) && !file.name.endsWith('.nii.gz')) {
+                showError('Desteklenmeyen dosya formatı. Lütfen .nii, .nii.gz, .dcm veya .zip dosyası yükleyin.');
+                return;
+            }
+
+            // Dosya boyutunu kontrol et (500MB)
+            if (file.size > 500 * 1024 * 1024) {
+                showError('Dosya boyutu çok büyük. Maksimum 500MB dosya yükleyebilirsiniz.');
+                return;
+            }
+
+            uploadFile(file);
+        }
+
+        function handleFolder(files) {
+            // Klasördeki DICOM dosyalarını filtrele
+            const dicomFiles = Array.from(files).filter(file => 
+                file.name.toLowerCase().endsWith('.dcm')
+            );
+
+            if (dicomFiles.length === 0) {
+                showError('Seçilen klasörde DICOM (.dcm) dosyası bulunamadı.');
+                return;
+            }
+
+            // Klasörü ZIP olarak paketle
+            createZipFromFiles(dicomFiles);
+        }
+
+        function handleFolderDrop(entry) {
+            const files = [];
+            
+            function readDirectory(dirEntry) {
+                const reader = dirEntry.createReader();
+                reader.readEntries((entries) => {
+                    let pending = entries.length;
+                    if (pending === 0) {
+                        // Tüm dosyalar okundu, ZIP oluştur
+                        const dicomFiles = files.filter(file => 
+                            file.name.toLowerCase().endsWith('.dcm')
+                        );
+                        if (dicomFiles.length > 0) {
+                            createZipFromFiles(dicomFiles);
+                        } else {
+                            showError('Klasörde DICOM (.dcm) dosyası bulunamadı.');
+                        }
+                        return;
+                    }
+                    
+                    entries.forEach((entry) => {
+                        if (entry.isFile) {
+                            entry.file((file) => {
+                                files.push(file);
+                                pending--;
+                                if (pending === 0) {
+                                    readDirectory(dirEntry);
+                                }
+                            });
+                        } else if (entry.isDirectory) {
+                            readDirectory(entry);
+                            pending--;
+                            if (pending === 0) {
+                                readDirectory(dirEntry);
+                            }
+                        } else {
+                            pending--;
+                            if (pending === 0) {
+                                readDirectory(dirEntry);
+                            }
+                        }
+                    });
+                });
+            }
+            
+            readDirectory(entry);
+        }
+
+        function createZipFromFiles(files) {
+            // Basit ZIP oluşturma (gerçek uygulamada JSZip kullanılabilir)
+            // Şimdilik ilk DICOM dosyasını yükle
+            if (files.length > 0) {
+                uploadFile(files[0], true);
+            }
+        }
+
+        function uploadFile(file, isFromFolder = false) {
+            const formData = new FormData();
+            formData.append('file', file);
+            if (isFromFolder) {
+                formData.append('is_folder', 'true');
+            }
+
+            // UI'yi güncelle
+            progressContainer.style.display = 'block';
+            loading.style.display = 'none';
+            resultSection.style.display = 'none';
+
+            // Progress bar animasyonu
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 200);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    
+                    if (data.success) {
+                        showResult(data);
+                    } else {
+                        showError(data.error || 'Bir hata oluştu');
+                    }
+                }, 500);
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                progressContainer.style.display = 'none';
+                showError('Bağlantı hatası: ' + error.message);
+            });
+        }
+
+        function showResult(data) {
+            currentResultFile = data.result_file;
+            currentZipFile = data.zip_file;
+            successMessage.textContent = data.message;
+            resultImage.src = 'data:image/png;base64,' + data.visualization;
+            resultSection.style.display = 'block';
+            downloadBtn.style.display = 'inline-block';
+            // Sayfayı sonuca kaydır
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(message) {
+            successMessage.textContent = message;
+            successMessage.className = 'error-message';
+            resultSection.style.display = 'block';
+            resultImage.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function downloadResult() {
+            if (currentZipFile) {
+                window.open('/download/zip/' + currentZipFile, '_blank');
+            } else {
+                alert('İndirilecek dosya bulunamadı!');
+            }
+        }
+
+        // Sayfa yüklendiğinde başlangıç durumu
+        document.addEventListener('DOMContentLoaded', () => {
+            resultSection.style.display = 'none';
+        });
+    </script>
+</body>
+</html> 
